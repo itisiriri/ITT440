@@ -1,0 +1,97 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#define PIN_WAIT_INTERVAL 2
+
+int main(void)
+{
+  int pipefds[2];
+  char buffer[200];
+  void sigint_handler(int sig);
+  char input[200];
+  int loop;
+  
+  //Sending signal to process
+  if(signal(SIGINT, sigint_handler)==SIG_ERR)
+  {
+    perror("signal");
+    exit(1);
+  }
+  
+  //Check pipe condition
+  if(pipe(pipefds)==-1)
+  {
+    perror("pipe");
+    exit(EXIT_FAILURE);
+  }
+  
+  printf("\nWhat message do you want to pass to my child?\n");
+  
+  //Parent get input from users
+  if(fgets(input, sizeof(input), stdin)==NULL)
+  {
+    perror("gets");
+  }
+  else
+  {
+    printf("\nThis is what I will pass to my child: %s", input);
+  }
+  
+  //Child loop input
+  printf("\nHow many time(s) would you like to pass this message to my child?\n");
+  scanf("%d", loop);
+  
+  //Child loop input check
+  if(loop < 1)
+  {
+    perror("\nOh no! Something went wrong. Goodbye!\n\n");
+  }
+  else
+  {
+    printf("\nAlright. I will pass this message %d time(s) to my child.\n", loop);
+  }
+  
+  //Pipe write
+  printf("\nHang in there. I'm passing the message to my child...\n");
+  write(pipefds[1], %input, sizeof(input));
+  sleep(PIN_WAIT_INTERVAL);
+  printf("The message has been passed.\n\n");
+  
+  //Pipe read
+  printf("I'll let you know when my child has received the message...\n");
+  read(pipefds[0], &buffer, sizeof(buffer));
+  sleep(PIN_WAIT_INTERVAL);
+  printf("Excellent! My child has received the message.\n\n");
+  
+  printf("Let me finish...\n\n");
+  
+  //Fork loop
+  for(int i=0; i<("%d", loop); i++)
+  {
+    pid_t pid = fork();
+    
+    if(pid==0)
+    {
+      printf("I'm child and I have received this message from you: %s", buffer);
+      exit(0);
+    }
+    else
+    {
+      wait(NULL);
+      close(pipefds[1]);
+      close(pipefds[0]);
+    }
+  }
+   printf("\nI'm finished. Goodbye!\n\n");
+}
+
+void sigint_handler(int sig)
+{
+  printf("\tOh no! Something went wrong. Goodbye!\n");
+}
